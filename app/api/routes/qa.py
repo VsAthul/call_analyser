@@ -15,17 +15,10 @@ from app.services.rag_service import (
     answer_question
 )
 
-router = APIRouter(
-    prefix="/api/calls",
-    tags=["QA"]
-)
+router = APIRouter(prefix="/api/calls",tags=["QA"])
 
 @router.post("/{call_id}/ask")
-async def ask_question(
-    call_id: int,
-    request: QuestionRequest,
-    db: Session = Depends(get_db)
-) -> dict:
+async def ask_question(call_id: int,request: QuestionRequest,db: Session = Depends(get_db)) -> dict:
     """
     Ask questions about call.
     """

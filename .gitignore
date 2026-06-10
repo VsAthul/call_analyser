@@ -7,7 +7,6 @@ wheels/
 *.egg-info
 .env
 chroma_db/
-# Virtual environments
 .venv
 
 banking_calls.db

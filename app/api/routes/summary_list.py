@@ -16,11 +16,7 @@ router = APIRouter(
 
 
 @router.get("")
-def list_summaries(
-    page: int = 1,
-    size: int = 10,
-    db: Session = Depends(get_db)
-):
+def list_summaries(page: int = 1,size: int = 10, db: Session = Depends(get_db)): 
 
     query = (
         db.query(

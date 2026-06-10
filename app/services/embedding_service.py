@@ -1,6 +1,5 @@
-from sentence_transformers import (
-    SentenceTransformer
-)
+from sentence_transformers import SentenceTransformer
+
 
 embedding_model: SentenceTransformer = (
     SentenceTransformer(
@@ -9,9 +8,7 @@ embedding_model: SentenceTransformer = (
 )
 
 
-def generate_embedding(
-    text: str
-) -> list[float]:
+def generate_embedding(text: str) -> list[float]:
     """
     Generate embedding vector.
 
