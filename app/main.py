@@ -5,7 +5,7 @@ from fastapi import Request
 
 from app.core.database import Base
 from app.core.database import engine
-
+import uvicorn
 # Import routers
 from app.api.routes.upload import router as upload_router
 from app.api.routes.transcript import router as transcript_router
@@ -62,5 +62,4 @@ async def summaries_page(
 
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
