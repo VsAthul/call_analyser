@@ -7,7 +7,8 @@ from app.core.database import get_db
 
 from app.models.summary import Summary
 from app.models.call import Call
-from app.models.audio_summary import AudioSummary
+from app.models.audio_summary import AudioSummary  # Add this
+
 
 router = APIRouter(
     prefix="/api/summaries",
@@ -57,7 +58,7 @@ def list_summaries(
             "call_type": call.call_type,
             "audio_path":
                 f"/{audio.audio_path}"
-                if audio else None
+                if audio and audio.audio_path else None
         })
 
     return {

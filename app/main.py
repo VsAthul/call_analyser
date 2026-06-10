@@ -58,3 +58,14 @@ async def home(
         name="index.html",
         context={}
     )
+
+@app.get("/summaries")
+async def summaries_page(
+    request: Request,
+    call_id: int = None
+):
+    return templates.TemplateResponse(
+        request=request,
+        name="summaries.html",
+        context={"call_id": call_id}
+    )
