@@ -11,13 +11,9 @@ client: Groq = Groq(
 )
 
 
-def generate_response(
-    prompt: str,
-    temperature: float = 0.0
-) -> str:
+def generate_response(prompt: str,temperature: float = 0.0) -> str:
     """
     Generate response from Groq.
-
     Args:
         prompt (str): Prompt text.
         temperature (float): Sampling temperature.

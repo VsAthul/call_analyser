@@ -15,6 +15,8 @@ from app.api.routes.qa import router as qa_router
 from app.api.routes.audio_summary import router as audio_summary_router
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
+from app.api.routes.summary_list import router as summary_list_router
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -31,11 +33,20 @@ app.mount(
     name="static"
 )
 
+app.mount(
+    "/generated_audio",
+    StaticFiles(
+        directory="generated_audio"
+    ),
+    name="generated_audio"
+)
+
 app.include_router(upload_router)
 app.include_router(transcript_router)
 app.include_router(summary_router)
+app.include_router(summary_list_router)
 app.include_router(qa_router)
-app.include_router(audio_summary_router)
+# app.include_router(audio_summary_router)
 
 
 @app.get("/")

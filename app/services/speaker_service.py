@@ -5,9 +5,7 @@ from app.services.groq_service import (
 )
 
 
-def map_speakers(
-    transcript_segments: list[dict]
-) -> list[dict]:
+def map_speakers(transcript_segments: list[dict]) -> list[dict]:
     """
     Map transcript segments to Customer/Banker.
 

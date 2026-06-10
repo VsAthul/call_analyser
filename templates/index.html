@@ -24,88 +24,49 @@
 
     <!-- LEFT PANEL -->
 
-    <div
-        class="
-        w-[30%]
-        bg-white
-        border-r
-        p-6
-        flex
-        flex-col
-        gap-4
-        "
-    >
+    <div class="w-[30%] bg-white border-r p-6 flex flex-col gap-4">
 
-        <h1
-            class="
-            text-2xl
-            font-bold
-            text-center
-            "
-        >
+        <h1 class="text-2xl font-bold text-center">
             Banking Call Analyzer
         </h1>
 
         <input
-    id="audioFile"
-    type="file"
-    class="border p-2 rounded"
->
-<p class="text-xs text-gray-400">Supported: .wav, .mp3, .m4a</p>
-
-        <input
-            id="callType"
-            type="text"
-            placeholder="Call Type"
-            class="
-            border
-            p-2
-            rounded
-            "
+            id="audioFile"
+            type="file"
+            class="border p-2 rounded"
         >
+        <p class="text-xs text-gray-400">Supported: .wav, .mp3, .m4a</p>
 
         <button
             id="uploadBtn"
-            class="
-            bg-blue-600
-            text-white
-            p-2
-            rounded
-            "
+            class="bg-blue-600 text-white p-2 rounded"
         >
             Upload Audio
         </button>
 
         <button
             id="summaryBtn"
-            class="
-            bg-green-600
-            text-white
-            p-2
-            rounded
-            "
+            class="bg-green-600 text-white p-2 rounded"
         >
             Generate Summary
         </button>
+        <button
+    id="summaryListBtn"
+    class="bg-indigo-600 text-white p-2 rounded"
+>
+    Summary List
+</button>
 
         <button
             id="transcriptBtn"
-            class="
-            bg-purple-600
-            text-white
-            p-2
-            rounded
-            "
+            class="bg-purple-600 text-white p-2 rounded"
         >
             View Transcript
         </button>
 
         <div
             id="status"
-            class="
-            text-sm
-            text-gray-600
-            "
+            class="text-sm text-gray-600"
         >
         </div>
 
@@ -113,67 +74,46 @@
 
     <!-- RIGHT PANEL -->
 
+<div class="w-[70%] flex flex-col h-screen">
+
+    <!-- CHAT OUTPUT -->
+
     <div
-        class="
-        w-[70%]
-        flex
-        flex-col
-        "
+        id="chatWindow"
+        class="flex-1 overflow-y-auto p-6"
+        style="display:flex; flex-direction:column; gap:12px;"
     >
+    </div>
 
-        <!-- CHAT OUTPUT -->
+    <!-- SUMMARY LIST CONTAINER -->
 
-        <div
-            id="chatWindow"
-            class="
-            flex-1
-            overflow-y-auto
-            p-6
-            space-y-4
-            "
+    <div
+        id="summaryContainer"
+        class="hidden flex-1 overflow-y-auto p-6"
+    >
+    </div>
+
+    <!-- INPUT -->
+
+    <div class="bg-white border-t p-4 flex gap-2">
+
+        <input
+            id="questionInput"
+            type="text"
+            placeholder="Ask question about call..."
+            class="flex-1 border rounded p-2"
         >
 
-        </div>
-
-        <!-- INPUT -->
-
-        <div
-            class="
-            bg-white
-            border-t
-            p-4
-            flex
-            gap-2
-            "
+        <button
+            id="askBtn"
+            class="bg-blue-600 text-white px-4 rounded"
         >
-
-            <input
-                id="questionInput"
-                type="text"
-                placeholder="Ask question about call..."
-                class="
-                flex-1
-                border
-                rounded
-                p-2
-                "
-            >
-
-            <button
-                id="askBtn"
-                class="
-                bg-blue-600
-                text-white
-                px-4
-                rounded
-                "
-            >
-                Send
-            </button>
-
-        </div>
+            Send
+        </button>
 
     </div>
+
+</div>
 
 </div>
 

@@ -28,7 +28,8 @@ class Call(Base):
 
     call_type = Column(
         String,
-        nullable=False
+        nullable=True,
+        default="detecting..."
     )
 
     audio_path = Column(

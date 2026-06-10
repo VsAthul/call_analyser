@@ -13,10 +13,7 @@ collection = client.get_or_create_collection(
 )
 
 
-def store_chunks(
-    call_id: int,
-    chunks: list[str]
-) -> None:
+def store_chunks(call_id: int,chunks: list[str]) -> None:
     """
     Store chunks in ChromaDB.
 
@@ -49,11 +46,7 @@ def store_chunks(
         documents=chunks,
         metadatas=metadatas
     )
-def retrieve_chunks(
-    call_id: int,
-    query: str,
-    top_k: int = 5
-) -> list[str]:
+def retrieve_chunks(call_id: int,query: str,top_k: int = 5) -> list[str]:
     """
     Retrieve relevant chunks.
 
