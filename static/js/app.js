@@ -6,6 +6,43 @@ const statusDiv =
 const chatWindow =
     document.getElementById("chatWindow");
 
+const summaryLoader =
+    document.getElementById(
+        "summaryLoader"
+    );
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        const navigating =
+            sessionStorage.getItem(
+                "navigatingToSummaries"
+            );
+
+        if (!navigating) {
+
+            sessionStorage.removeItem(
+                "homePageState"
+            );
+        }
+    }
+);
+    
+function showLoader() {
+
+    summaryLoader.classList.remove(
+        "hidden"
+    );
+}
+
+function hideLoader() {
+
+    summaryLoader.classList.add(
+        "hidden"
+    );
+}
+
 document
 .getElementById("uploadBtn")
 .addEventListener(
@@ -21,9 +58,19 @@ document
             alert("Select audio file");
             return;
         }
+        const maxSizeMB = 20;
 
-        const allowedExt =
-            [".wav", ".mp3", ".m4a", ".aac"];
+        const fileSizeMB = file.size / (1024 * 1024);
+
+        if (fileSizeMB > maxSizeMB) {
+
+            alert(
+                `File size exceeds ${maxSizeMB} MB limit`
+            );
+
+            return;
+        }
+        const allowedExt = [".wav", ".mp3", ".m4a", ".aac"];
 
         const ext =
             file.name
@@ -102,62 +149,79 @@ document
             return;
         }
 
-        const response =
-            await fetch(
-                `/api/calls/${currentCallId}/summary`
-            );
+        try {
 
-        const data =
-            await response.json();
+            showLoader();
 
-        showChatView();
-
-        addMessage(
-            "Summary",
-            data.summary
-        );
-
-        if (data.audio_path) {
-
-            const wrapper =
-                document.createElement(
-                    "div"
+            const response =
+                await fetch(
+                    `/api/calls/${currentCallId}/summary`
                 );
 
-            wrapper.innerHTML = `
-                <div
-                    style="
-                        background:white;
-                        padding:12px;
-                        border-radius:12px;
-                        border:1px solid #e5e7eb;
-                    "
-                >
-                    <p
-                        style="
-                            font-size:12px;
-                            font-weight:600;
-                            margin-bottom:8px;
-                        "
-                    >
-                        Audio Summary
-                    </p>
+            const data =
+                await response.json();
 
-                    <audio controls>
-                        <source
-                            src="${data.audio_path}"
-                            type="audio/mpeg"
-                        >
-                    </audio>
-                </div>
-            `;
+            showChatView();
 
-            chatWindow.appendChild(
-                wrapper
+            addMessage(
+                "Summary",
+                data.summary
             );
 
-            chatWindow.scrollTop =
-                chatWindow.scrollHeight;
+            if (data.audio_path) {
+
+                const wrapper =
+                    document.createElement(
+                        "div"
+                    );
+
+                wrapper.innerHTML = `
+                    <div
+                        style="
+                            background:white;
+                            padding:12px;
+                            border-radius:12px;
+                            border:1px solid #e5e7eb;
+                        "
+                    >
+                        <p
+                            style="
+                                font-size:12px;
+                                font-weight:600;
+                                margin-bottom:8px;
+                            "
+                        >
+                            Audio Summary
+                        </p>
+
+                        <audio controls>
+                            <source
+                                src="${data.audio_path}"
+                                type="audio/mpeg"
+                            >
+                        </audio>
+                    </div>
+                `;
+
+                chatWindow.appendChild(
+                    wrapper
+                );
+
+                chatWindow.scrollTop =
+                    chatWindow.scrollHeight;
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Failed to generate summary"
+            );
+
+        } finally {
+
+            hideLoader();
         }
     }
 );
@@ -172,12 +236,20 @@ document
             "homePageState",
             JSON.stringify({
                 currentCallId,
-                statusHtml: statusDiv.innerHTML,
-                chatHtml: chatWindow.innerHTML
+                statusHtml:
+                    statusDiv.innerHTML,
+                chatHtml:
+                    chatWindow.innerHTML
             })
         );
 
-        window.location.href = "/summaries";
+        sessionStorage.setItem(
+            "navigatingToSummaries",
+            "true"
+        );
+
+        window.location.href =
+            "/summaries";
     }
 );
 

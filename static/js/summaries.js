@@ -166,6 +166,10 @@ function nextPage() {
 
 function goBack() {
 
+    sessionStorage.removeItem(
+        "navigatingToSummaries"
+    );
+
     window.location.href = "/";
 }
 

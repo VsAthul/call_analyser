@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from fastapi import UploadFile
 from fastapi import File
 from fastapi import Depends
+from fastapi import HTTPException
 
 from sqlalchemy.orm import Session
 
@@ -26,6 +27,8 @@ from app.services.summary_service import detect_call_type
 
 UPLOAD_FOLDER = "uploads"
 
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
+
 router = APIRouter(
     prefix="/api/calls",
     tags=["Calls"]
@@ -44,6 +47,17 @@ async def upload_call(
     Upload and process audio.
     """
 
+    # Validate file size
+    audio_file.file.seek(0, 2)
+    file_size = audio_file.file.tell()
+    audio_file.file.seek(0)
+
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail="Audio file exceeds 20 MB limit"
+        )
+
     # 1. Save file
     file_path: str = save_uploaded_file(
         file=audio_file,
@@ -61,45 +75,65 @@ async def upload_call(
     db.add(call)
     db.commit()
     db.refresh(call)
+
     call_id: int = call.call_id
 
     # 3. Transcribe audio — segments carry start/end timestamps
     transcript_segments: list[dict] = await asyncio.to_thread(
-        transcribe_audio, file_path
+        transcribe_audio,
+        file_path
     )
 
-    # FIX 1: Calculate duration from the last segment's end time
     # before timing data is lost in the speaker-mapping step.
     duration_seconds: float | None = None
+
     if transcript_segments:
         duration_seconds = transcript_segments[-1]["end"]
 
-    # 4. Map speakers (returns dicts with only "speaker" and "text")
+    # 4. Map speakers
     speaker_mapped_segments: list[dict] = await asyncio.to_thread(
-        map_speakers, transcript_segments
+        map_speakers,
+        transcript_segments
     )
 
     # 5. Save transcript rows
-    # FIX 2: Re-attach the original timestamps by index.
-    # map_speakers preserves segment count, so index alignment is safe.
-    for i, item in enumerate(speaker_mapped_segments):
-        # Grab the matching Whisper segment for timing data (if available)
-        original = transcript_segments[i] if i < len(transcript_segments) else {}
-        start: float | None = original.get("start")
-        end: float | None = original.get("end")
+    for i, item in enumerate(
+        speaker_mapped_segments
+    ):
 
-        # Build a human-readable timestamp string, e.g. "0.00s - 4.32s"
-        if start is not None and end is not None:
-            timestamp: str | None = f"{start:.2f}s - {end:.2f}s"
+        original = (
+            transcript_segments[i]
+            if i < len(transcript_segments)
+            else {}
+        )
+
+        start: float | None = original.get(
+            "start"
+        )
+
+        end: float | None = original.get(
+            "end"
+        )
+
+        if (
+            start is not None
+            and end is not None
+        ):
+            timestamp: str | None = (
+                f"{start:.2f}s - {end:.2f}s"
+            )
         else:
             timestamp = None
 
-        db.add(Transcript(
-            call_id=call_id,
-            speaker=item["speaker"],
-            text=item["text"],
-            timestamp=timestamp          # ← was always missing before
-        ))
+        db.add(
+            Transcript(
+                call_id=call_id,
+                speaker=item["speaker"],
+                text=item["text"],
+                timestamp=timestamp
+            )
+        )
+
     db.commit()
 
     # 6. Build transcript text
@@ -109,22 +143,34 @@ async def upload_call(
 
     # 7. Detect call type using LLM
     detected_call_type: str = await asyncio.to_thread(
-        detect_call_type, transcript_text
+        detect_call_type,
+        transcript_text
     )
 
     # 8. Store chunks in ChromaDB
-    chunks: list[str] = chunk_text(transcript_text)
+    chunks: list[str] = chunk_text(
+        transcript_text
+    )
+
     await asyncio.to_thread(
         store_chunks,
         call_id=call_id,
         chunks=chunks
     )
 
-    # 9. Update call record — now includes computed duration
-    call = db.query(Call).filter(Call.call_id == call_id).first()
+    # 9. Update call record
+    call = (
+        db.query(Call)
+        .filter(
+            Call.call_id == call_id
+        )
+        .first()
+    )
+
     call.call_type = detected_call_type
     call.processing_status = "completed"
-    call.duration_seconds = duration_seconds   # ← was always missing before
+    call.duration_seconds = duration_seconds
+
     db.commit()
 
     return UploadResponse(
