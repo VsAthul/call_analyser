@@ -7,7 +7,7 @@ from app.core.database import get_db
 
 from app.models.summary import Summary
 from app.models.call import Call
-from app.models.audio_summary import AudioSummary
+
 
 router = APIRouter(
     prefix="/api/summaries",
@@ -25,16 +25,11 @@ def list_summaries(
     query = (
         db.query(
             Summary,
-            Call,
-            AudioSummary
+            Call
         )
         .join(
             Call,
             Summary.call_id == Call.call_id
-        )
-        .outerjoin(
-            AudioSummary,
-            Summary.call_id == AudioSummary.call_id
         )
     )
 
@@ -49,15 +44,14 @@ def list_summaries(
 
     data = []
 
-    for summary, call, audio in rows:
+    for summary, call in rows:
 
         data.append({
             "summary_id": summary.summary_id,
             "summary_text": summary.summary_text,
             "call_type": call.call_type,
-            "audio_path":
-                f"/{audio.audio_path}"
-                if audio else None
+            "audio_path": f"/{summary.audio_summary_path}"
+            if summary.audio_summary_path else None
         })
 
     return {

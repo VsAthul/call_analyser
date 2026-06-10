@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking Call Analyzer - Summaries</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+
+<div class="max-w-7xl mx-auto p-6">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Call Summaries</h1>
+        <button onclick="goBack()" 
+                class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2 rounded-lg font-medium flex items-center gap-2">
+            ← Back to Home
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        <table class="min-w-full">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">Sl No</th>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">Call Type</th>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">Summary</th>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">Audio Summary</th>
+                </tr>
+            </thead>
+            <tbody id="summaryTableBody" class="divide-y divide-gray-200">
+                <!-- Populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-between items-center mt-6">
+        <button id="prevBtn"
+                onclick="prevPage()"
+                class="px-5 py-2 bg-white border rounded-lg hover:bg-gray-50">
+            Previous
+        </button>
+        
+        <span id="pageInfo" class="text-gray-600 font-medium">Page 1</span>
+        
+        <button id="nextBtn"
+                onclick="nextPage()"
+                class="px-5 py-2 bg-white border rounded-lg hover:bg-gray-50">
+            Next
+        </button>
+    </div>
+</div>
+
+<script src="/static/js/summaries.js"></script>
+</body>
+</html>

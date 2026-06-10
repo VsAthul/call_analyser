@@ -1,16 +1,10 @@
 let currentCallId = null;
-let currentSummaryPage = 1;
 
 const statusDiv =
     document.getElementById("status");
 
 const chatWindow =
     document.getElementById("chatWindow");
-
-const summaryContainer =
-    document.getElementById(
-        "summaryContainer"
-    );
 
 document
 .getElementById("uploadBtn")
@@ -172,9 +166,18 @@ document
 .getElementById("summaryListBtn")
 .addEventListener(
     "click",
-    async () => {
+    () => {
 
-        await loadSummarys(1);
+        sessionStorage.setItem(
+            "homePageState",
+            JSON.stringify({
+                currentCallId,
+                statusHtml: statusDiv.innerHTML,
+                chatHtml: chatWindow.innerHTML
+            })
+        );
+
+        window.location.href = "/summaries";
     }
 );
 
@@ -289,180 +292,12 @@ document
     }
 );
 
-function showSummaryView() {
 
-    chatWindow.style.display =
-        "none";
-
-    summaryContainer.classList.remove(
-        "hidden"
-    );
-}
 
 function showChatView() {
 
-    summaryContainer.classList.add(
-        "hidden"
-    );
-
     chatWindow.style.display =
         "flex";
-}
-
-async function loadSummarys(
-    page = 1
-) {
-
-    currentSummaryPage =
-        page;
-
-    const response =
-        await fetch(
-            `/api/summaries?page=${page}&size=10`
-        );
-
-    const data =
-        await response.json();
-
-    showSummaryView();
-
-    let html = `
-        <div class="bg-white rounded shadow p-4">
-
-            <h2
-                class="text-xl font-semibold mb-4"
-            >
-                Summary List
-            </h2>
-
-            <table
-                class="w-full border-collapse border"
-            >
-
-                <thead>
-
-                    <tr class="bg-gray-100">
-
-                        <th class="border p-2">
-                            Sl No
-                        </th>
-
-                        <th class="border p-2">
-                            Summary Text
-                        </th>
-
-                        <th class="border p-2">
-                            Call Type
-                        </th>
-
-                        <th class="border p-2">
-                            Summary Audio
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-    `;
-
-    data.items.forEach(
-        (row, index) => {
-
-            html += `
-                <tr>
-
-                    <td class="border p-2 text-center">
-                        ${((page - 1) * 10) + index + 1}
-                    </td>
-
-                    <td class="border p-2">
-                        ${row.summary_text || "-"}
-                    </td>
-
-                    <td class="border p-2">
-                        ${row.call_type || "-"}
-                    </td>
-
-                    <td class="border p-2">
-
-                        ${
-                            row.audio_path
-                            ?
-                            `
-                            <audio controls>
-                                <source
-                                    src="${row.audio_path}"
-                                    type="audio/mpeg"
-                                >
-                            </audio>
-                            `
-                            :
-                            "-"
-                        }
-
-                    </td>
-
-                </tr>
-            `;
-        }
-    );
-
-    html += `
-                </tbody>
-
-            </table>
-
-            <div
-                class="
-                    flex
-                    justify-center
-                    gap-2
-                    mt-4
-                "
-            >
-
-                <button
-                    onclick="loadSummarys(${page - 1})"
-                    class="
-                        bg-gray-200
-                        px-4
-                        py-2
-                        rounded
-                    "
-                    ${page <= 1 ? "disabled" : ""}
-                >
-                    Previous
-                </button>
-
-                <span
-                    class="
-                        px-4
-                        py-2
-                    "
-                >
-                    Page ${page}
-                </span>
-
-                <button
-                    onclick="loadSummarys(${page + 1})"
-                    class="
-                        bg-gray-200
-                        px-4
-                        py-2
-                        rounded
-                    "
-                >
-                    Next
-                </button>
-
-            </div>
-
-        </div>
-    `;
-
-    summaryContainer.innerHTML =
-        html;
 }
 
 function addMessage(
@@ -566,3 +401,28 @@ ${text}
     chatWindow.scrollTop =
         chatWindow.scrollHeight;
 }
+
+window.addEventListener(
+    "load",
+    () => {
+
+        const saved =
+            sessionStorage.getItem(
+                "homePageState"
+            );
+
+        if (!saved) return;
+
+        const state =
+            JSON.parse(saved);
+
+        currentCallId =
+            state.currentCallId;
+
+        statusDiv.innerHTML =
+            state.statusHtml || "";
+
+        chatWindow.innerHTML =
+            state.chatHtml || "";
+    }
+);
