@@ -1,4 +1,4 @@
-# 📞 AI-Powered Banking Call Analyzer
+# AI-Powered Banking Call Analyzer
 
 ## Problem Statement
 
