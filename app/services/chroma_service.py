@@ -1,6 +1,7 @@
 import chromadb
-
+from app.core.logger import logger
 from app.core.config import CHROMA_DB_PATH
+
 try:
     client = chromadb.PersistentClient(
         path=CHROMA_DB_PATH
@@ -9,7 +10,13 @@ try:
     collection = client.get_or_create_collection(
         name="transcript_embeddings"
     )
+    logger.info(
+    f"ChromaDB initialized. path={CHROMA_DB_PATH}"
+)
 except Exception as e:
+    logger.exception(
+        "Failed to initialize ChromaDB"
+    )
     raise RuntimeError(
         f"Failed to initialize ChromaDB: {e}"
     )
@@ -45,12 +52,21 @@ def store_chunks(call_id: int,chunks: list[str]) -> None:
                 "chunk_index": index
             }
         )
-
-    collection.add(
-        ids=ids,
-        documents=chunks,
-        metadatas=metadatas
+    try:
+        collection.add(
+                ids=ids,
+                documents=chunks,
+                metadatas=metadatas
+            )
+        logger.info(
+            f"Stored {len(chunks)} chunks for call_id={call_id}"
+        )
+    except Exception:
+        logger.exception(
+        f"Failed to store chunks for call_id={call_id}"
     )
+        raise
+
 def retrieve_chunks(call_id: int,query: str,top_k: int = 5) -> list[str]:
     """
     Retrieve relevant chunks.
@@ -63,14 +79,20 @@ def retrieve_chunks(call_id: int,query: str,top_k: int = 5) -> list[str]:
     Returns:
         list[str]
     """
-
-    result = collection.query(
-        query_texts=[query],
-        n_results=top_k,
-        where={
-            "call_id": call_id
-        }
+    try:
+        result = collection.query(
+            query_texts=[query],
+            n_results=top_k,
+            where={
+                "call_id": call_id
+            }
+        )
+    except Exception:
+        logger.exception(
+        f"Failed to retrieve chunks for call_id={call_id}"
     )
+        raise
+
 
     documents: list[str] = (
         result["documents"][0]

@@ -1,13 +1,10 @@
 from fastapi import APIRouter
 from fastapi import Depends
-
 from sqlalchemy.orm import Session
-
 from app.core.database import get_db
-
 from app.models.summary import Summary
 from app.models.call import Call
-
+from app.core.logger import logger
 
 router = APIRouter(
     prefix="/api/summaries",
@@ -17,27 +14,35 @@ router = APIRouter(
 
 @router.get("")
 def list_summaries(page: int = 1,size: int = 10, db: Session = Depends(get_db)): 
-
-    query = (
-        db.query(
-            Summary,
-            Call
+    
+    logger.info(
+    f"Summary list requested. page={page}, size={size}"
+)
+    try:
+        query = (
+            db.query(
+                Summary,
+                Call
+            )
+            .join(
+                Call,
+                Summary.call_id == Call.call_id
+            )
         )
-        .join(
-            Call,
-            Summary.call_id == Call.call_id
+
+        total = query.count()
+
+        rows = (
+            query
+            .offset((page - 1) * size)
+            .limit(size)
+            .all()
         )
+    except Exception:
+        logger.exception(
+        "Failed to fetch summary list"
     )
-
-    total = query.count()
-
-    rows = (
-        query
-        .offset((page - 1) * size)
-        .limit(size)
-        .all()
-    )
-
+        raise
     data = []
 
     for summary, call in rows:

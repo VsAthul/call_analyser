@@ -1,11 +1,9 @@
 from fastapi import APIRouter
 from fastapi import Depends
-
 from sqlalchemy.orm import Session
-
 from app.core.database import get_db
-
 from app.models.transcript import Transcript
+from app.core.logger import logger
 
 router = APIRouter(
     prefix="/api/calls",
@@ -13,21 +11,26 @@ router = APIRouter(
 )
 
 @router.get("/{call_id}/transcript")
-async def get_transcript(
-    call_id: int,
-    db: Session = Depends(get_db)
-) -> dict:
+async def get_transcript(call_id: int,db: Session = Depends(get_db)) -> dict:
     """
     Return transcript.
     """
-
-    rows = (
-        db.query(Transcript)
-        .filter(
-            Transcript.call_id == call_id
+    logger.info(
+    f"Transcript requested. call_id={call_id}"
+)
+    try:
+        rows = (
+            db.query(Transcript)
+            .filter(
+                Transcript.call_id == call_id
+            )
+            .all()
         )
-        .all()
+    except Exception:
+        logger.exception(
+        f"Failed to fetch transcript. call_id={call_id}"
     )
+        raise
 
     transcript_data: list[dict] = []
 
