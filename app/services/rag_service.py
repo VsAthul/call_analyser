@@ -1,5 +1,4 @@
 from typing import Any, List
-
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
@@ -7,10 +6,9 @@ from langchain_core.language_models import BaseLLM
 from langchain_core.outputs import LLMResult, Generation
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-
 from app.services.chroma_service import retrieve_chunks
 from app.services.groq_service import generate_response
-
+from app.core.logger import logger
 
 # 1.  RETRIEVER
 
@@ -26,11 +24,17 @@ class ChromaRetriever(BaseRetriever):
         arbitrary_types_allowed = True
 
     def _get_relevant_documents(self, query: str,**kwargs: Any) -> List[Document]:
-
-        chunks: list[str] = retrieve_chunks(
-            call_id=self.call_id,
-            query=query
-        )
+        
+        try:
+            chunks: list[str] = retrieve_chunks(
+                call_id=self.call_id,
+                query=query
+            )
+        except Exception:
+            logger.exception(
+        f"Chunk retrieval failed. call_id={self.call_id}"
+    )
+            raise
 
         return [
             Document(page_content=chunk)
@@ -64,10 +68,16 @@ class GroqLLM(BaseLLM):
         generations = []
 
         for prompt in prompts:
-            text = generate_response(
-                prompt=prompt,
-                temperature=self.temperature
-            )
+            try:
+                text = generate_response(
+                    prompt=prompt,
+                    temperature=self.temperature
+                )
+            except Exception:
+                logger.exception(
+        "RAG LLM generation failed"
+    )          
+                raise
             generations.append([Generation(text=text)])
 
         return LLMResult(generations=generations)
@@ -132,9 +142,19 @@ def answer_question(call_id: int,question: str) -> str:
     Returns:
         str: LLM-generated answer.
     """
-
+    logger.info(
+    f"QA request received. call_id={call_id}"
+)
     chain = _build_chain(call_id=call_id)
 
-    answer: str = chain.invoke(question)
-
-    return answer
+    try:
+        answer: str = chain.invoke(question)
+        logger.info(
+            f"QA completed. call_id={call_id}"
+        )
+        return answer
+    except Exception:
+        logger.exception(
+            f"QA failed. call_id={call_id}"
+        )
+        raise

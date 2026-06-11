@@ -1,9 +1,7 @@
 from app.services.groq_service import generate_response
+from app.core.logger import logger
 
-
-def generate_summary(
-    transcript_text: str
-) -> str:
+def generate_summary(transcript_text: str) -> str:
     """
     Generate call summary.
 
@@ -23,14 +21,21 @@ Transcript:
 
 {transcript_text}
 """
-
-    summary: str = generate_response(
-        prompt=prompt,
-        temperature=0.2
+    try:
+        logger.info(
+        "Starting summary generation"
+    )
+        summary: str = generate_response(
+            prompt=prompt,
+            temperature=0.2
+        )
+        return summary
+    except Exception:
+        logger.exception(
+        "Summary generation failed"
     )
 
-    return summary
-
+    raise
 
 def detect_call_type(transcript_text: str) -> str:
     """
@@ -68,5 +73,22 @@ Instructions:
 Transcript:
 {transcript_text}
 """
+    try:
+        logger.info(
+            "Starting call type detection"
+        )
+        result = generate_response(
+            prompt=prompt,
+            temperature=0
+        ).strip()
+        logger.info(
+            f"Call type detected: {result}"
+        )
 
-    return generate_response(prompt=prompt, temperature=0).strip()
+        return result
+
+    except Exception:
+        logger.exception(
+            "Call type detection failed"
+        )
+        raise

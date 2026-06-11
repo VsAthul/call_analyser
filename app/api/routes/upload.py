@@ -233,6 +233,9 @@ async def upload_call(audio_file: UploadFile = File(...),
 )
 
     except Exception:
+        logger.exception(
+        f"Failed to save transcript. call_id={call_id}"
+    )
         db.rollback()
 
         raise HTTPException(
@@ -247,14 +250,23 @@ async def upload_call(audio_file: UploadFile = File(...),
 
     # 7. Detect call type using LLM
     try:
+        logger.info(
+    f"Detecting call type. call_id={call_id}"
+)
         detected_call_type: str = (
             await asyncio.to_thread(
                 detect_call_type,
                 transcript_text
             )
         )
+        logger.info(
+    f"Call type detected. call_id={call_id}, type={detected_call_type}"
+)
 
     except Exception:
+        logger.exception(
+        f"Call type detection failed. call_id={call_id}"
+    )
         detected_call_type = "General Inquiry"
 
     # 8. Store chunks in ChromaDB
@@ -263,13 +275,21 @@ async def upload_call(audio_file: UploadFile = File(...),
     )
 
     try:
+        logger.info(
+    f"Storing chunks in ChromaDB. call_id={call_id}, chunks={len(chunks)}"
+)
         await asyncio.to_thread(
             store_chunks,
             call_id=call_id,
             chunks=chunks
         )
-
+        logger.info(
+    f"Chunks stored successfully. call_id={call_id}"
+)
     except Exception as e:
+        logger.exception(
+        f"Vector indexing failed. call_id={call_id}"
+    )
         raise HTTPException(
             status_code=500,
             detail=f"Vector indexing failed: {str(e)}"
@@ -294,8 +314,15 @@ async def upload_call(audio_file: UploadFile = File(...),
 
     try:
         db.commit()
+        logger.info(
+    f"Call processing completed. call_id={call_id}"
+)
 
     except Exception:
+        logger.exception(
+        f"Failed to update call status. call_id={call_id}"
+    )
+
         db.rollback()
 
         raise HTTPException(

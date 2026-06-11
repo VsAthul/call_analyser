@@ -1,5 +1,5 @@
 import json
-
+from app.core.logger import logger
 from app.services.groq_service import generate_response
 
 
@@ -7,14 +7,15 @@ from app.services.groq_service import generate_response
 def map_speakers(transcript_segments: list[dict]) -> list[dict]:
     """
     Map transcript segments to Customer/Banker.
-
     Args:
         transcript_segments (list[dict])
-
     Returns:
         list[dict]
     """
-
+    if not transcript_segments:
+        raise ValueError(
+            "No transcript segments provided"
+        )
     transcript_text: str = "\n".join(
         [
             item["text"]
@@ -23,34 +24,44 @@ def map_speakers(transcript_segments: list[dict]) -> list[dict]:
     )
 
     prompt: str = f"""
-You are a banking call analyst.
+    You are a banking call analyst.
 
-Identify whether each sentence
-belongs to:
+    Identify whether each sentence
+    belongs to:
 
-1. Customer
-2. Banker
+    1. Customer
+    2. Banker
 
-Return ONLY valid JSON.
+    Return ONLY valid JSON.
 
-Format:
+    Format:
 
-[
-    {{
-        "speaker": "Customer",
-        "text": "..."
-    }}
-]
+    [
+        {{
+            "speaker": "Customer",
+            "text": "..."
+        }}
+    ]
 
-Transcript:
+    Transcript:
 
-{transcript_text}
-"""
-
-    response: str = generate_response(
-        prompt=prompt,
-        temperature=0
+    {transcript_text}
+    """
+    try:
+        logger.info(
+    "Starting speaker mapping"
+)
+        response: str = generate_response(
+            prompt=prompt,
+            temperature=0
+        )
+    except Exception as e:
+        logger.exception(
+        "Speaker mapping LLM call failed"
     )
+        raise RuntimeError(
+            f"Speaker mapping failed: {e}"
+        )
 
     try:
 
@@ -61,7 +72,9 @@ Transcript:
         return mapped_segments
 
     except Exception:
-
+        logger.warning(
+    "Invalid JSON from speaker mapping. Using fallback speaker assignment."
+)
         fallback_segments: list[dict] = []
 
         for item in transcript_segments:

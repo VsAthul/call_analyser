@@ -1,8 +1,4 @@
-def chunk_text(
-    text: str,
-    chunk_size: int = 500,
-    chunk_overlap: int = 100
-) -> list[str]:
+def chunk_text(text: str,chunk_size: int = 500,chunk_overlap: int = 100) -> list[str]:
     """
     Split transcript into chunks.
 
