@@ -46,7 +46,11 @@ async def upload_call(
     """
     Upload and process audio.
     """
-
+    if not audio_file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="No file selected"
+        )
     # Validate file size
     audio_file.file.seek(0, 2)
     file_size = audio_file.file.tell()
@@ -57,12 +61,36 @@ async def upload_call(
             status_code=400,
             detail="Audio file exceeds 20 MB limit"
         )
+    ALLOWED_EXTENSIONS = {
+    ".wav",
+    ".mp3",
+    ".m4a",
+    ".ogg",
+    ".aac"
+    }
+
+    extension = Path(
+        audio_file.filename
+    ).suffix.lower()
+
+    if extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported audio format"
+        )
 
     # 1. Save file
-    file_path: str = save_uploaded_file(
-        file=audio_file,
-        upload_folder=UPLOAD_FOLDER
-    )
+    try:
+        file_path: str = save_uploaded_file(
+            file=audio_file,
+            upload_folder=UPLOAD_FOLDER
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unable to save file: {str(e)}"
+        )
 
     # 2. Create call record with placeholder
     call: Call = Call(
@@ -72,29 +100,63 @@ async def upload_call(
         processing_status="processing"
     )
 
-    db.add(call)
-    db.commit()
-    db.refresh(call)
+    try:
+        db.add(call)
+        db.commit()
+        db.refresh(call)
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create call record"
+        )
 
     call_id: int = call.call_id
 
     # 3. Transcribe audio — segments carry start/end timestamps
-    transcript_segments: list[dict] = await asyncio.to_thread(
-        transcribe_audio,
-        file_path
-    )
+    try:
+        transcript_segments: list[dict] = (
+            await asyncio.to_thread(
+                transcribe_audio,
+                file_path
+            )
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Transcription failed: {str(e)}"
+        )
+
+    if not transcript_segments:
+        raise HTTPException(
+            status_code=400,
+            detail="No speech detected in audio"
+        )
 
     # before timing data is lost in the speaker-mapping step.
     duration_seconds: float | None = None
 
     if transcript_segments:
-        duration_seconds = transcript_segments[-1]["end"]
+        duration_seconds = (
+    transcript_segments[-1].get("end")
+)
 
     # 4. Map speakers
-    speaker_mapped_segments: list[dict] = await asyncio.to_thread(
-        map_speakers,
-        transcript_segments
-    )
+    try:
+        speaker_mapped_segments: list[dict] = (
+            await asyncio.to_thread(
+                map_speakers,
+                transcript_segments
+            )
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Speaker mapping failed: {str(e)}"
+        )
 
     # 5. Save transcript rows
     for i, item in enumerate(
@@ -134,7 +196,16 @@ async def upload_call(
             )
         )
 
-    db.commit()
+    try:
+        db.commit()
+
+    except Exception:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to save transcript"
+        )
 
     # 6. Build transcript text
     transcript_text: str = transcript_to_text(
@@ -142,21 +213,34 @@ async def upload_call(
     )
 
     # 7. Detect call type using LLM
-    detected_call_type: str = await asyncio.to_thread(
-        detect_call_type,
-        transcript_text
-    )
+    try:
+        detected_call_type: str = (
+            await asyncio.to_thread(
+                detect_call_type,
+                transcript_text
+            )
+        )
+
+    except Exception:
+        detected_call_type = "General Inquiry"
 
     # 8. Store chunks in ChromaDB
     chunks: list[str] = chunk_text(
         transcript_text
     )
 
-    await asyncio.to_thread(
-        store_chunks,
-        call_id=call_id,
-        chunks=chunks
-    )
+    try:
+        await asyncio.to_thread(
+            store_chunks,
+            call_id=call_id,
+            chunks=chunks
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Vector indexing failed: {str(e)}"
+        )
 
     # 9. Update call record
     call = (
@@ -166,12 +250,25 @@ async def upload_call(
         )
         .first()
     )
-
+    if not call:
+        raise HTTPException(
+            status_code=404,
+            detail="Call record not found"
+        )
     call.call_type = detected_call_type
     call.processing_status = "completed"
     call.duration_seconds = duration_seconds
 
-    db.commit()
+    try:
+        db.commit()
+
+    except Exception:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update call status"
+        )
 
     return UploadResponse(
         call_id=call_id,

@@ -1,8 +1,7 @@
 import json
 
-from app.services.groq_service import (
-    generate_response
-)
+from app.services.groq_service import generate_response
+
 
 
 def map_speakers(transcript_segments: list[dict]) -> list[dict]:

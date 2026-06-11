@@ -1,15 +1,18 @@
 import chromadb
 
 from app.core.config import CHROMA_DB_PATH
+try:
+    client = chromadb.PersistentClient(
+        path=CHROMA_DB_PATH
+    )
 
-client = chromadb.PersistentClient(
-    path=CHROMA_DB_PATH
-)
-
-collection = client.get_or_create_collection(
-    name="transcript_embeddings"
-)
-
+    collection = client.get_or_create_collection(
+        name="transcript_embeddings"
+    )
+except Exception as e:
+    raise RuntimeError(
+        f"Failed to initialize ChromaDB: {e}"
+    )
 
 def store_chunks(call_id: int,chunks: list[str]) -> None:
     """
@@ -22,6 +25,10 @@ def store_chunks(call_id: int,chunks: list[str]) -> None:
     Returns:
         None
     """
+    if not chunks:
+        raise ValueError(
+            "No chunks provided for storage"
+        )
 
     ids: list[str] = []
     metadatas: list[dict] = []
