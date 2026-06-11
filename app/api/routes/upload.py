@@ -1,31 +1,24 @@
 from pathlib import Path
 import asyncio
-
 from fastapi import APIRouter
 from fastapi import UploadFile
 from fastapi import File
 from fastapi import Depends
 from fastapi import HTTPException
-
 from sqlalchemy.orm import Session
-
 from app.core.database import get_db
-
 from app.models.call import Call
 from app.models.transcript import Transcript
-
 from app.schemas.upload_schema import UploadResponse
-
 from app.utils.file_utils import save_uploaded_file
 from app.utils.chunking import chunk_text
-
 from app.services.whisper_service import transcribe_audio
 from app.services.speaker_service import map_speakers
 from app.services.transcript_service import transcript_to_text
 from app.services.chroma_service import store_chunks
 from app.services.summary_service import detect_call_type
-
-UPLOAD_FOLDER = "uploads"
+from app.core.config import UPLOAD_FOLDER
+UPLOAD_FOLDER = UPLOAD_FOLDER
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 

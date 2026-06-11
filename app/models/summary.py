@@ -4,7 +4,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Text
 from sqlalchemy import String
 from sqlalchemy.orm import relationship
-
 from app.core.database import Base
 
 
