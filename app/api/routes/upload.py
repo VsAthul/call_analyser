@@ -18,6 +18,8 @@ from app.services.transcript_service import transcript_to_text
 from app.services.chroma_service import store_chunks
 from app.services.summary_service import detect_call_type
 from app.core.config import UPLOAD_FOLDER
+from app.core.logger import logger
+
 UPLOAD_FOLDER = UPLOAD_FOLDER
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
@@ -32,13 +34,15 @@ router = APIRouter(
     "/upload",
     response_model=UploadResponse
 )
-async def upload_call(
-    audio_file: UploadFile = File(...),
+async def upload_call(audio_file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ) -> UploadResponse:
     """
     Upload and process audio.
     """
+    logger.info(
+    f"Upload request received. file={audio_file.filename}"
+    )
     if not audio_file.filename:
         raise HTTPException(
             status_code=400,
@@ -71,6 +75,9 @@ async def upload_call(
             status_code=400,
             detail="Unsupported audio format"
         )
+    logger.info(
+    f"File validated. file={audio_file.filename}, size={file_size}"
+)
 
     # 1. Save file
     try:
@@ -78,8 +85,14 @@ async def upload_call(
             file=audio_file,
             upload_folder=UPLOAD_FOLDER
         )
+        logger.info(
+        f"File saved successfully. path={file_path}"
+    )
 
     except Exception as e:
+        logger.exception(
+        f"Failed to save file. file={audio_file.filename}"
+    )
         raise HTTPException(
             status_code=500,
             detail=f"Unable to save file: {str(e)}"
@@ -97,8 +110,14 @@ async def upload_call(
         db.add(call)
         db.commit()
         db.refresh(call)
+        logger.info(
+    f"Call record created. call_id={call.call_id}"
+)
 
     except Exception:
+        logger.exception(
+        "Failed to create call record"
+    )
         db.rollback()
         raise HTTPException(
             status_code=500,
@@ -109,14 +128,23 @@ async def upload_call(
 
     # 3. Transcribe audio — segments carry start/end timestamps
     try:
+        logger.info(
+    f"Starting transcription. call_id={call_id}"
+)
         transcript_segments: list[dict] = (
             await asyncio.to_thread(
                 transcribe_audio,
                 file_path
             )
         )
+        logger.info(
+    f"Transcription completed. call_id={call_id}, segments={len(transcript_segments)}"
+)
 
     except Exception as e:
+        logger.exception(
+        f"Transcription failed. call_id={call_id}"
+    )
         raise HTTPException(
             status_code=500,
             detail=f"Transcription failed: {str(e)}"
@@ -138,14 +166,23 @@ async def upload_call(
 
     # 4. Map speakers
     try:
+        logger.info(
+    f"Starting speaker mapping. call_id={call_id}"
+)
         speaker_mapped_segments: list[dict] = (
             await asyncio.to_thread(
                 map_speakers,
                 transcript_segments
             )
         )
+        logger.info(
+        f"Speaker mapping completed. call_id={call_id}"
+    )
 
     except Exception as e:
+        logger.exception(
+        f"Speaker mapping failed. call_id={call_id}"
+    )
         raise HTTPException(
             status_code=500,
             detail=f"Speaker mapping failed: {str(e)}"
@@ -191,6 +228,9 @@ async def upload_call(
 
     try:
         db.commit()
+        logger.info(
+    f"Transcript saved. call_id={call_id}"
+)
 
     except Exception:
         db.rollback()
