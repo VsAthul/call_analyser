@@ -1,5 +1,7 @@
-from app.services.groq_service import generate_response
+from app.services.groq_service import get_llm
+from app.schemas.summary_schema import SummaryResult
 from app.core.logger import logger
+from app.schemas.upload_schema import CallTypeResult
 
 def generate_summary(transcript_text: str) -> str:
     """
@@ -13,9 +15,15 @@ def generate_summary(transcript_text: str) -> str:
     """
 
     prompt: str = f"""
-You are a banking call summarizer.
+You are a banking call analyst.
 
-Create a concise summary.
+Generate a concise summary of the call.
+
+Include:
+- Customer intent
+- Issue discussed
+- Actions taken
+- Final outcome
 
 Transcript:
 
@@ -25,11 +33,20 @@ Transcript:
         logger.info(
         "Starting summary generation"
     )
-        summary: str = generate_response(
-            prompt=prompt,
+        llm = get_llm(
             temperature=0.2
         )
-        return summary
+
+        structured_llm = llm.with_structured_output(
+            SummaryResult
+        )
+
+        result: SummaryResult = structured_llm.invoke(
+            prompt
+        )
+
+        return result.summary
+    
     except Exception:
         logger.exception(
         "Summary generation failed"
@@ -74,21 +91,35 @@ Transcript:
 {transcript_text}
 """
     try:
+
         logger.info(
             "Starting call type detection"
         )
-        result = generate_response(
-            prompt=prompt,
+
+        llm = get_llm(
             temperature=0
-        ).strip()
-        logger.info(
-            f"Call type detected: {result}"
         )
 
-        return result
+        structured_llm = llm.with_structured_output(
+            CallTypeResult
+        )
+
+        result: CallTypeResult = (
+            structured_llm.invoke(
+                prompt
+            )
+        )
+
+        logger.info(
+            f"Call type detected: {result.call_type}"
+        )
+
+        return result.call_type
 
     except Exception:
+
         logger.exception(
             "Call type detection failed"
         )
+
         raise
