@@ -1,8 +1,6 @@
 import json
 from app.core.logger import logger
-# from app.services.groq_service import generate_response
-from app.schemas.upload_schema import SpeakerMapping, SpeakerSegment
-from app.services.groq_service import get_llm
+from app.services.groq_service import generate_response
 
 
 
@@ -34,69 +32,58 @@ def map_speakers(transcript_segments: list[dict]) -> list[dict]:
     1. Customer
     2. Banker
 
-    For every sentence, identify whether the speaker is:
+    Return ONLY valid JSON.
 
-1. Customer
-2. Banker
+    Format:
 
-Preserve the original text.
-Return all transcript segments.
+    [
+        {{
+            "speaker": "Customer",
+            "text": "..."
+        }}
+    ]
 
     Transcript:
 
     {transcript_text}
     """
     try:
-
         logger.info(
-            "Starting speaker mapping"
-        )
-
-        llm = get_llm(
+    "Starting speaker mapping"
+)
+        response: str = generate_response(
+            prompt=prompt,
             temperature=0
         )
-
-        structured_llm = (
-            llm.with_structured_output(
-                SpeakerMapping
-            )
-        )
-
-        result: SpeakerMapping = (
-            structured_llm.invoke(
-                prompt
-            )
-        )
-
     except Exception as e:
-
         logger.exception(
-            "Speaker mapping LLM call failed"
-        )
-
+        "Speaker mapping LLM call failed"
+    )
         raise RuntimeError(
             f"Speaker mapping failed: {e}"
         )
 
     try:
 
-        mapped_segments = [
-            {
-                "speaker": segment.speaker,
-                "text": segment.text
-            }
-
-            for segment in result.segments
-        ]
+        mapped_segments: list[dict] = (
+            json.loads(response)
+        )
 
         return mapped_segments
 
-    except Exception as e:
+    except Exception:
+        logger.warning(
+    "Invalid JSON from speaker mapping. Using fallback speaker assignment."
+)
+        fallback_segments: list[dict] = []
 
-        logger.exception(
-            "Failed to process structured speaker mapping"
-        )
+        for item in transcript_segments:
 
-        raise RuntimeError(
-            f"Speaker mapping processing failed: {e}"
-    )
+            fallback_segments.append(
+                {
+                    "speaker": "Customer",
+                    "text": item["text"]
+                }
+            )
+
+        return fallback_segments

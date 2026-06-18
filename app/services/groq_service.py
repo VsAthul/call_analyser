@@ -1,5 +1,5 @@
 from groq import Groq
-from langchain_groq import ChatGroq
+
 from app.core.config import GROQ_API_KEY
 
 
@@ -37,12 +37,4 @@ def generate_response(prompt: str,temperature: float = 0.0) -> str:
         response
         .choices[0]
         .message.content
-    )
-
-def get_llm(temperature: float = 0.0) -> ChatGroq:
-
-    return ChatGroq(
-        model=MODEL_NAME,
-        api_key=GROQ_API_KEY,
-        temperature=temperature
     )

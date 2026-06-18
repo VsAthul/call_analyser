@@ -1,7 +1,5 @@
-from app.services.groq_service import get_llm
-from app.schemas.summary_schema import SummaryResult
+from app.services.groq_service import generate_response
 from app.core.logger import logger
-from app.schemas.upload_schema import CallTypeResult
 
 def generate_summary(transcript_text: str) -> str:
     """
@@ -15,15 +13,9 @@ def generate_summary(transcript_text: str) -> str:
     """
 
     prompt: str = f"""
-You are a banking call analyst.
+You are a banking call summarizer.
 
-Generate a concise summary of the call.
-
-Include:
-- Customer intent
-- Issue discussed
-- Actions taken
-- Final outcome
+Create a concise summary.
 
 Transcript:
 
@@ -33,20 +25,11 @@ Transcript:
         logger.info(
         "Starting summary generation"
     )
-        llm = get_llm(
+        summary: str = generate_response(
+            prompt=prompt,
             temperature=0.2
         )
-
-        structured_llm = llm.with_structured_output(
-            SummaryResult
-        )
-
-        result: SummaryResult = structured_llm.invoke(
-            prompt
-        )
-
-        return result.summary
-    
+        return summary
     except Exception:
         logger.exception(
         "Summary generation failed"
@@ -91,35 +74,21 @@ Transcript:
 {transcript_text}
 """
     try:
-
         logger.info(
             "Starting call type detection"
         )
-
-        llm = get_llm(
+        result = generate_response(
+            prompt=prompt,
             temperature=0
-        )
-
-        structured_llm = llm.with_structured_output(
-            CallTypeResult
-        )
-
-        result: CallTypeResult = (
-            structured_llm.invoke(
-                prompt
-            )
-        )
-
+        ).strip()
         logger.info(
-            f"Call type detected: {result.call_type}"
+            f"Call type detected: {result}"
         )
 
-        return result.call_type
+        return result
 
     except Exception:
-
         logger.exception(
             "Call type detection failed"
         )
-
         raise
